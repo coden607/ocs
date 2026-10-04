@@ -22,11 +22,15 @@ jobs:
           pathlib.Path.home().joinpath(".ssh/vps_key").write_text(raw + "\n")
           PY
           chmod 600 ~/.ssh/vps_key
-          echo "===== PUBLIC KEY (copy this ONE line into /root/.ssh/authorized_keys) ====="
-          ssh-keygen -y -f ~/.ssh/vps_key || { echo "::error::VPS_SSH_KEY is not a valid private key (paste was mangled). Regenerate on the VPS and store the private key again."; exit 1; }
+          echo "===== PUBLIC KEY (this must be a line in /root/.ssh/authorized_keys) ====="
+          ssh-keygen -y -f ~/.ssh/vps_key || { echo "::error::VPS_SSH_KEY is not a valid private key. Regenerate on the VPS and gh secret set from the file, do not paste."; exit 1; }
           echo "===== FINGERPRINT ====="
           ssh-keygen -lf ~/.ssh/vps_key
           echo "===== SSH ====="
-          ssh -i ~/.ssh/vps_key -o StrictHostKeyChecking=no -o IdentitiesOnly=yes \
+          ssh -i ~/.ssh/vps_key \
+            -o StrictHostKeyChecking=no \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o ConnectTimeout=20 \
             root@134.122.113.44 \
             "VPSBOT_TOKEN='$BOT_TOKEN' VPSBOT_CHATS='$TG_CHAT_ID' bash <(curl -fsSL https://raw.githubusercontent.com/coden607/ocs/main/02-telegram.sh)"
