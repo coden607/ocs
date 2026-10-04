@@ -2,22 +2,31 @@
 # 02-telegram.sh — interactive Telegram setup (token, chat ID, service, verify)
 set -uo pipefail
 trap 'echo; exit 130' INT
-say(){ echo "[*] $*"; } ok(){ echo "[+] $*"; }
-warn(){ echo "[!] $*"; } die(){ echo "[x] $*"; exit 1; }
+say(){ echo "[*] $*"; }
+ok(){ echo "[+] $*"; }
+warn(){ echo "[!] $*"; }
+die(){ echo "[x] $*"; exit 1; }
 say "=== Telegram setup ==="
 command -v curl >/dev/null || { apt-get update -qq && apt-get install -y -qq curl; }
-E="$HOME/.vpsbot.env"; T=""; C=""
+E="$HOME/.vpsbot.env"
+T="${VPSBOT_TOKEN:-}"
+C="${VPSBOT_CHATS:+}
 if [ -f "$E" ]; then . "$E"; say "saved setup found (bot @$BOT_NAME)"; fi
 if [ -z "$T" ]; then
-  echo; say "Get a token: Telegram → @BotFather → /newbot (or /mybots → API Token)"
+  echo; say "Get a token: Telegram → @BotFather →//newbot (or /mybots → API Token)"
   while [ -z "$T" ]; do
     printf "[?] paste token: "; read -r T
     ME=$(curl -s "https://api.telegram.org/bot$T/getMe")
-    if printf '%s' "$ME" | grep -q '"ok":true'; then
-      N=$(printf '%s' "$ME" | grep -o '"username":"[^"]*"' | cut -d'"' -f4); ok "bot @$N valid"
-    else warn "bad token — copy exactly from BotFather"; T=""; fi
+    if printf %s' "$ME" | grep -q '"ok":true'; then
+      N=$(printf '%s' "$ME" | grep -o '"username":"[^"]*"' | cut -d'"' -f4)
+      ok "bot @$N valid"
+    else
+      warn "bad token — copy exactly from BotFather"; T=""
+    fi
   done
-else N="$BOT_NAME"; fi
+else
+  N="$BOT_NAME"
+fi
 if [ -z "$C" ]; then
   echo; say "Open @$N in Telegram, send any message (like: hi). Waiting up to 2 min..."
   for i in $(seq 1 60); do
@@ -36,8 +45,7 @@ apt-get install -y -qq python3-pip >/dev/null 2>&1
 pip3 install -q --break-system-packages "python-telegram-bot==13.15" 2>/dev/null || pip3 install -q "python-telegram-bot==13.15"
 mkdir -p /opt/vpsbot
 curl -sf -o /opt/vpsbot/bot.py https://raw.githubusercontent.com/coden607/ocs/main/vpsbot/bot.py || die "bot.py missing in ocs repo"
-cat > /etc/systemd/system/vpsbot.service << UNIT
-[Unit]
+cat > /etc/systemd/system/vpsbot.service << UNITZ[Unit]
 Description=VPS Telegram runner
 After=network.target
 [Service]
