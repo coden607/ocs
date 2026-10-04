@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# 02-telegram.sh - interactive Telegram setup (token, chat ID, service, verify)
+# 02-telegram.sh - Telegram setup (token, chat ID, service, verify)
+# Non-interactive when VPSBOT_TOKEN and VPSBOT_CHATS are set (GitHub Actions).
 set -uo pipefail
 trap 'echo; exit 130' INT
 say(){ echo "[*] $*"; }
@@ -11,11 +12,12 @@ command -v curl >/dev/null || { apt-get update -qq && apt-get install -y -qq cur
 E="$HOME/.vpsbot.env"
 T="${VPSBOT_TOKEN:-}"
 C="${VPSBOT_CHATS:-}"
-if [ -f "$E" ]; then . "$E"; say "saved setup found (bot @$BOT_NAME)"; fi
+if [ -f "$E" ]; then . "$E"; T="${VPSBOT_TOKEN:-${TOKEN:-$T}}"; C="${VPSBOT_CHATS:-${CHAT_ID:-$C}}"; say "saved setup found (bot ${BOT_NAME:-unknown})"; fi
 if [ -z "$T" ]; then
+  [ -t 0 ] || die "VPSBOT_TOKEN empty and no terminal. Set the BOT_TOKEN secret."
   echo; say "Get a token: Telegram > @BotFather > /newbot (or /mybots > API Token)"
   while [ -z "$T" ]; do
-    printf "[?] paste token: "; read -r T
+    printf "[?] paste token: "; read -r T || die "no token"
     ME=$(curl -s "https://api.telegram.org/bot$T/getMe")
     if printf '%s' "$ME" | grep -q '"ok":true'; then
       N=$(printf '%s' "$ME" | grep -o '"username":"[^"]*"' | cut -d'"' -f4)
@@ -25,9 +27,13 @@ if [ -z "$T" ]; then
     fi
   done
 else
-  N="$BOT_NAME"
+  ME=$(curl -s "https://api.telegram.org/bot$T/getMe")
+  N=$(printf '%s' "$ME" | grep -o '"username":"[^"]*"' | cut -d'"' -f4)
+  printf '%s' "$ME" | grep -q '"ok":true' || die "BOT_TOKEN rejected by Telegram"
+  ok "bot @$N valid"
 fi
 if [ -z "$C" ]; then
+  [ -t 0 ] || die "VPSBOT_CHATS empty and no terminal. Set the TG_CHAT_ID secret."
   echo; say "Open @$N in Telegram, send any message (like: hi). Waiting up to 2 min..."
   for i in $(seq 1 60); do
     C=$(curl -s "https://api.telegram.org/bot$T/getUpdates" | grep -o '"chat":{"id":[^,]*' | tail -1 | grep -oE '\-?[0-9]+')
@@ -36,7 +42,7 @@ if [ -z "$C" ]; then
   done; echo
   if [ -z "$C" ]; then
     warn "timed out."; say "Message @userinfobot, paste your numeric ID below:"
-    printf "[?] chat ID: "; read -r C
+    printf "[?] chat ID: "; read -r C || die "no chat id"
   fi
   ok "chat ID: $C"
 fi
