@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 02-telegram.sh — interactive Telegram setup (token, chat ID, service, verify)
+# 02-telegram.sh - interactive Telegram setup (token, chat ID, service, verify)
 set -uo pipefail
 trap 'echo; exit 130' INT
 say(){ echo "[*] $*"; }
@@ -10,18 +10,18 @@ say "=== Telegram setup ==="
 command -v curl >/dev/null || { apt-get update -qq && apt-get install -y -qq curl; }
 E="$HOME/.vpsbot.env"
 T="${VPSBOT_TOKEN:-}"
-C="${VPSBOT_CHATS:+}
+C="${VPSBOT_CHATS:-}"
 if [ -f "$E" ]; then . "$E"; say "saved setup found (bot @$BOT_NAME)"; fi
 if [ -z "$T" ]; then
-  echo; say "Get a token: Telegram → @BotFather →//newbot (or /mybots → API Token)"
+  echo; say "Get a token: Telegram > @BotFather > /newbot (or /mybots > API Token)"
   while [ -z "$T" ]; do
     printf "[?] paste token: "; read -r T
     ME=$(curl -s "https://api.telegram.org/bot$T/getMe")
-    if printf %s' "$ME" | grep -q '"ok":true'; then
+    if printf '%s' "$ME" | grep -q '"ok":true'; then
       N=$(printf '%s' "$ME" | grep -o '"username":"[^"]*"' | cut -d'"' -f4)
       ok "bot @$N valid"
     else
-      warn "bad token — copy exactly from BotFather"; T=""
+      warn "bad token - copy exactly from BotFather"; T=""
     fi
   done
 else
@@ -45,7 +45,8 @@ apt-get install -y -qq python3-pip >/dev/null 2>&1
 pip3 install -q --break-system-packages "python-telegram-bot==13.15" 2>/dev/null || pip3 install -q "python-telegram-bot==13.15"
 mkdir -p /opt/vpsbot
 curl -sf -o /opt/vpsbot/bot.py https://raw.githubusercontent.com/coden607/ocs/main/vpsbot/bot.py || die "bot.py missing in ocs repo"
-cat > /etc/systemd/system/vpsbot.service << UNITZ[Unit]
+cat > /etc/systemd/system/vpsbot.service << UNIT
+[Unit]
 Description=VPS Telegram runner
 After=network.target
 [Service]
@@ -56,7 +57,7 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
 UNIT
-systemctl daemon-reload && systemctl enable --now vpsbot || die "service failed — journalctl -u vpsbot"
+systemctl daemon-reload && systemctl enable --now vpsbot || die "service failed - journalctl -u vpsbot"
 printf 'TOKEN=%s\nCHAT_ID=%s\nBOT_NAME=%s\n' "$T" "$C" "$N" > "$E"; chmod 600 "$E"
-curl -s -X POST "https://api.telegram.org/bot$T/sendMessage" -d "chat_id=$C" --data-urlencode "text=✅ vpsbot live on $(hostname). Send me: #! echo hello && hostname" >/dev/null
-echo; ok "ALL DONE — double-tap pipeline is live"
+curl -s -X POST "https://api.telegram.org/bot$T/sendMessage" -d "chat_id=$C" --data-urlencode "text=OK vpsbot live on $(hostname). Send me: #! echo hello && hostname" >/dev/null
+echo; ok "ALL DONE - double-tap pipeline is live"
