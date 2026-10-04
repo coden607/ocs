@@ -4,10 +4,11 @@
 #   curl -fsSL https://raw.githubusercontent.com/coden607/ocs/main/04-set-bot-secrets.sh | bash
 set -uo pipefail
 REPO="${VPS_REPO:-coden607/ocs}"
+TTY=/dev/tty
 say(){ echo "[*] $*"; }
 ok(){ echo "[+] $*"; }
 die(){ echo "[x] $*"; exit 1; }
-[ -t 0 ] || die "need a real terminal. Run this in the DigitalOcean console, not over a pipe without a tty."
+[ -r "$TTY" ] || die "need a real terminal. Run this in the DigitalOcean console."
 command -v gh >/dev/null || die "gh missing"
 command -v curl >/dev/null || die "curl missing"
 gh auth status -h github.com >/dev/null 2>&1 || die "gh is not logged in"
@@ -16,9 +17,9 @@ say "BotFather: Telegram > @BotFather > /mybots > your bot > API Token"
 say "Chatty bot token is the same kind of key. Paste will be hidden."
 T=""
 while [ -z "$T" ]; do
-  printf "[?] BotFather / Chatty API token: "
-  read -rs T || die "no token"
-  echo
+  printf "[?] BotFather / Chatty API token: " >"$TTY"
+  read -rs T <"$TTY" || die "no token"
+  echo >"$TTY"
   ME=$(curl -s --max-time 20 "https://api.telegram.org/bot${T}/getMe")
   if printf '%s' "$ME" | grep -q '"ok":true'; then
     N=$(printf '%s' "$ME" | grep -o '"username":"[^"]*"' | cut -d'"' -f4)
@@ -30,8 +31,8 @@ while [ -z "$T" ]; do
 done
 echo
 say "Open @$N, send hi, or message @userinfobot for your numeric id."
-printf "[?] chat id (blank to try getUpdates): "
-read -r C || C=""
+printf "[?] chat id (blank to try getUpdates): " >"$TTY"
+read -r C <"$TTY" || C=""
 if [ -z "$C" ]; then
   say "waiting up to 60s for a message to @$N"
   for i in $(seq 1 30); do
