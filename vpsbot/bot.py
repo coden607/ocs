@@ -1,0 +1,70 @@
+import os, re, subprocess, tempfile
+from telegram.ext import Updater, MessageHandler, Filters
+
+TOKEN = os.environ["VPSBOT_TOKEN"]
+ALLOWED = set(filter(None, os.environ.get("VPSBOT_CHATS", "").split(",")))
+BUFFERS = {}
+
+def reply_chunks(update, text, n=3500):
+    for i in range(0, len(text), n):
+        update.message.reply_text(text[i:i+n])
+
+def run_file(update, path):
+    update.message.reply_text("[*] running on vps...")
+    os.chmod(path, 0o700)
+    try:
+        p = subprocess.run(["bash", path], capture_output=True, text=True, timeout=3600)
+        out = (p.stdout + "\n" + p.stderr).strip() or "(no output)"
+        reply_chunks(update, f"exit={p.returncode}\n--- output ---\n{out}")
+    except subprocess.TimeoutExpired:
+        update.message.reply_text("timed out after 1h")
+
+def handle_doc(update, context):
+    cid = str(update.effective_chat.id)
+    if cid not in ALLOWED:
+        return
+    doc = update.message.document
+    if not doc:
+        return
+    tmp = tempfile.NamedTemporaryFile("wb", suffix=".sh", delete=False)
+    tmp.close()
+    doc.get_file().download(custom_path=tmp.name)
+    run_file(update, tmp.name)
+    os.unlink(tmp.name)
+
+def handle_text(update, context):
+    cid = str(update.effective_chat.id)
+    if cid not in ALLOWED:
+        return
+    text = update.message.text or ""
+    low = text.strip()
+    if low == "CLEAR":
+        BUFFERS.pop(cid, None); update.message.reply_text("buffer cleared"); return
+    if low == "GO":
+        parts = BUFFERS.pop(cid, [])
+        if not parts:
+            update.message.reply_text("buffer empty"); return
+        blocks = re.findall(r"```(?:bash|sh|shell)?\n(.*?)```", "\n".join(parts), re.S)
+        script = "\n".join(blocks) if blocks else "\n".join(parts)
+        tmp = tempfile.NamedTemporaryFile("w", suffix=".sh", delete=False)
+        tmp.write(script); tmp.close()
+        run_file(update, tmp.name); os.unlink(tmp.name); return
+    blocks = re.findall(r"```(?:bash|sh|shell)?\n(.*?)```", text, re.S)
+    outside = re.sub(r"```(?:bash|sh|shell)?\n.*?```", "", text, flags=re.S).strip()
+    if len(blocks) == 1 and not outside:
+        tmp = tempfile.NamedTemporaryFile("w", suffix=".sh", delete=False)
+        tmp.write(blocks[0]); tmp.close()
+        run_file(update, tmp.name); os.unlink(tmp.name); return
+    if text.startswith("#!"):
+        tmp = tempfile.NamedTemporaryFile("w", suffix=".sh", delete=False)
+        tmp.write(text); tmp.close()
+        run_file(update, tmp.name); os.unlink(tmp.name); return
+    BUFFERS.setdefault(cid, []).append(text)
+    total = sum(len(m) for m in BUFFERS[cid])
+    update.message.reply_text(f"buffered ({total} chars). Send GO to run, CLEAR to reset.")
+
+u = Updater(TOKEN)
+u.dispatcher.add_handler(MessageHandler(Filters.document, handle_doc))
+u.dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_text))
+u.start_polling()
+u.idle()
