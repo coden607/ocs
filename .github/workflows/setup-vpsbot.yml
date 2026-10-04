@@ -5,14 +5,13 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     steps:
-      - name: install vpsbot on VPS
+      - name: install vpsbot on VPS via SSH key
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          VPS_ROOT_PASSWORD: ${{ secrets.VPS_ROOT_PASSWORD }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
-          sshpass -p "$VPS_ROOT_PASSWORD" ssh -o StrictHostKeyChecking=no \
-            -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+          mkdir -p ~/.ssh && printf '%s' "$VPS_SSH_KEY" > ~/.ssh/vps_key && chmod 600 ~/.ssh/vps_key
+          ssh -i ~/.ssh/vps_key -o StrictHostKeyChecking=no \
             root@134.122.113.44 \
             "VPSBOT_TOKEN='$BOT_TOKEN' VPSBOT_CHATS='$TG_CHAT_ID' bash <(curl -s https://raw.githubusercontent.com/coden607/ocs/main/02-telegram.sh)"
