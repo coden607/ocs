@@ -1,4 +1,4 @@
-import os, re, subprocess, tempfile
+import html, os, re, subprocess, tempfile
 from telegram.ext import Updater, MessageHandler, Filters
 
 TOKEN = os.environ["VPSBOT_TOKEN"]
@@ -6,8 +6,9 @@ ALLOWED = set(filter(None, os.environ.get("VPSBOT_CHATS", "").split(",")))
 BUFFERS = {}
 
 def reply_chunks(update, text, n=3500):
+    # Monospace <pre> blocks: tap one in Telegram to copy it, then paste into the LLM.
     for i in range(0, len(text), n):
-        update.message.reply_text(text[i:i+n])
+        update.message.reply_text("<pre>%s</pre>" % html.escape(text[i:i+n]), parse_mode="HTML")
 
 def run_file(update, path):
     update.message.reply_text("[*] running on vps...")
