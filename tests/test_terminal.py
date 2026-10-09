@@ -1,5 +1,8 @@
 """Installer and capture contracts; fake tmux never contacts a VPS."""
 import os
+import fcntl
+import pty
+import termios
 from pathlib import Path
 import subprocess
 import tempfile
@@ -23,6 +26,13 @@ case "$*" in
   *capture-pane*)
     if [ -n "${CAPTURE_FILE:-}" ]; then cat "$CAPTURE_FILE"; else printf 'command\\n  indented output  \\n\\n'; fi
     exit "${CAPTURE_FAIL:-0}" ;;
+esac
+case "$*" in
+  *new-session*)
+    terminal=$(tty)
+    printf '%s\\n' "$terminal" > "$HOME/terminal.name"
+    if [ "$terminal" = /dev/tty ]; then echo "open terminal failed: can't use /dev/tty" >&2; exit 1; fi
+    ;;
 esac
 ''')
         tmux.chmod(0o700)
@@ -95,6 +105,19 @@ esac
         self.assertEqual(self.helper('shell').returncode, 0)
         self.assertIn('-L ocs-copy -f /dev/null new-session -A -s ocs-copy',
                       (self.root / 'tmux.calls').read_text())
+
+    def test_installer_passes_real_terminal_to_tmux(self):
+        master, slave = pty.openpty()
+        self.addCleanup(os.close, master)
+        self.addCleanup(os.close, slave)
+        def controlling_terminal():
+            os.setsid()
+            fcntl.ioctl(slave, termios.TIOCSCTTY, 0)
+        result = subprocess.run(['bash', str(SCRIPT)], env=self.env,
+                                stdin=slave, stdout=slave, stderr=slave,
+                                preexec_fn=controlling_terminal, timeout=10)
+        self.assertEqual(result.returncode, 0)
+        self.assertTrue((self.root / 'terminal.name').read_text().startswith('/dev/pts/'))
 
     def test_nested_tmux_fails_with_detach_instruction(self):
         self.install()

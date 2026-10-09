@@ -65,9 +65,9 @@ Assign Settings > Accessibility > Touch > Back Tap > Triple Tap > VPS to LLM.
 Use this terminal for commands. Triple-tap, then tap Paste in the LLM chat.
 Ctrl-B then D detaches; ~/.local/bin/ocs shell reconnects.
 STEPS
-if [ "${1:-}" != --no-attach ] && ( : </dev/tty ) 2>/dev/null; then
+if [ "${1:-}" != --no-attach ] && [ -t 0 ] && [ -t 1 ]; then
   printf '[+] Opening your capture terminal...\n'
-  "$BIN/ocs" shell </dev/tty >/dev/tty 2>/dev/tty
+  "$BIN/ocs" shell
 else
   printf '[+] Start capture: ~/.local/bin/ocs shell\n'
 fi

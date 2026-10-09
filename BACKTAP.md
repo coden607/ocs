@@ -59,5 +59,8 @@ printed by commands; review before sending to the LLM.
   `ocs-copy` session, so switch to the pane you want before tapping.
 - **Installer says file exists**: it refused to replace an unrelated helper.
 - **Empty output**: type a command in the capture terminal and retry.
+- **Can't use /dev/tty**: run `~/.local/bin/ocs shell` directly from your
+  interactive prompt. The installer must inherit the actual terminal, not
+  reopen `/dev/tty`; piped/noninteractive installs print the reconnect command.
 
 Phone execution and Back Tap require verification on the actual iPhone.
