@@ -8,6 +8,7 @@ phone-controlled runner. Triggered from the droplet console or an iPhone
 
 | Path | What it does |
 |------|--------------|
+| `00-all.sh` | One command on the VPS: runs `02-telegram.sh`, then `07-backtap.sh`, then `06-copyback.sh` if Tailscale is present. |
 | `01-vps-key.sh` | Run on the VPS as root. Generates an ed25519 keypair, installs the public key in `authorized_keys`, and stores the private key as the GitHub Actions secret `VPS_SSH_KEY` on this repo. |
 | `02-telegram.sh` | Validates a BotFather token + chat ID, creates a Python venv at `/opt/vpsbot`, installs `vpsbot/bot.py` as a systemd service, and sends a "live" confirmation to Telegram. Non-interactive when `VPSBOT_TOKEN` / `VPSBOT_CHATS` are set. |
 | `03-ish-setup.sh` | Interactive helper meant for iSH on iPhone: opens BotFather/userinfobot/GitHub/Vercel URLs, saves token + chat ID locally, and can push the full Telegram setup to the VPS over SSH. |
