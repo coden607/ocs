@@ -15,7 +15,7 @@ phone-controlled runner. Triggered from the droplet console or an iPhone
 | `05-shortcut.sh` | Walks through building an iOS Shortcut ("VPS run") that sends clipboard contents to the bot via `sendMessage`, plus optional Back Tap binding. Can generate and Telegram-deliver a ready-made `.shortcut` file. |
 | `vpsbot/bot.py` | Telegram long-polling bot (python-telegram-bot 13.x). Accepts shell scripts as documents or `#!/bin/bash` text / fenced code blocks, executes them on the VPS (up to 1h timeout), and replies with exit code + output. Supports multi-message buffering (`GO` to run, `CLEAR` to reset). |
 | `.github/workflows/setup-vpsbot.yml` | Manually-dispatched workflow that SSHes into the VPS (`134.122.113.44`) using `VPS_SSH_KEY` and runs `02-telegram.sh` with the `BOT_TOKEN` / `TG_CHAT_ID` secrets. |
-| `07-backtap.sh` | Run on the VPS. One command, no prompts: builds the "VPS run" iPhone shortcut from the saved bot token/chat ID and sends the file plus tap-to-copy manual values to your Telegram chat. |
+| `07-backtap.sh` | Run on the VPS. One command, no prompts: sends the "VPS run" shortcut recipe plus tap-to-copy URL and chat ID (from the saved bot token) (iOS blocks unsigned shortcut files, so the shortcut is built by hand) to your Telegram chat. |
 | `06-copyback.sh` | Run on the VPS (needs Tailscale on VPS + iPhone). Adds a token-protected, read-only `/last` endpoint bound to the Tailscale IP, and prints the steps for a "VPS copy" shortcut (Back Tap triple-tap) that puts the last output on the clipboard. |
 
 ## Setup order

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 07-backtap.sh - one command: builds the iPhone shortcut and sends it to your Telegram.
+# 07-backtap.sh - one command: sends the shortcut recipe + copy boxes to your Telegram.
 #   curl -fsSL https://raw.githubusercontent.com/coden607/ocs/main/07-backtap.sh | bash
 # Reads /root/.vpsbot.env (TOKEN, CHAT_ID). No prompts, no pasting the token.
 set -uo pipefail
@@ -52,9 +52,9 @@ def post(method, fields, file=None):
 def pre(s):
     return "<pre>%s</pre>" % s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
-ok1 = post("sendDocument", {"chat_id": chat, "caption": "1) Tap this file, then Share > Shortcuts > Add Shortcut."}, ("VPS-run.shortcut", data))
+ok1 = True
 steps = (
- "If the file will not import, build it by hand (Shortcuts > +). Tap each box below to copy it.\n\n"
+ "Build the shortcut (Shortcuts app > +). iOS blocks unsigned shortcut files, so this is manual. Tap each box below to copy it.\n\n"
  "Actions, in order:\n"
  "1. Get Clipboard\n"
  "2. Text: line 1 is #!/bin/bash, line 2 is the Clipboard variable\n"
@@ -68,12 +68,12 @@ ok2 = post("sendMessage", {"chat_id": chat, "text": steps + "\n\nBox A (URL):" ,
 ok3 = post("sendMessage", {"chat_id": chat, "parse_mode": "HTML", "text": pre(url)})
 ok4 = post("sendMessage", {"chat_id": chat, "text": "Box B (chat_id):"})
 ok5 = post("sendMessage", {"chat_id": chat, "parse_mode": "HTML", "text": pre(chat)})
-print("[%s] file  [%s] recipe  [%s] url  [%s] chat id" % tuple("+" if x else "x" for x in (ok1, ok2, ok3, ok5)))
+print("[%s] -  [%s] recipe  [%s] url  [%s] chat id" % tuple("+" if x else "x" for x in (ok1, ok2, ok3, ok5)))
 sys.exit(0 if all((ok1, ok2, ok3, ok4, ok5)) else 1)
 PY
 rc=$?
 if [ $rc -eq 0 ]; then
-  echo "[+] Open Telegram: file + copy boxes are in your bot chat."
+  echo "[+] Open Telegram: recipe + copy boxes are in your bot chat."
   echo "[*] Last manual step (iOS has no API for it):"
   echo "    Settings > Accessibility > Touch > Back Tap > Double Tap > VPS run"
 else
