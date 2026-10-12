@@ -4,7 +4,7 @@ set -uo pipefail
 VPS_IP="${VPS_IP:-134.122.113.44}"
 E="$HOME/.vpsbot.env"
 [ -f "$E" ] && . "$E"
-say(){ echo "[*] $*"; } ok(){ echo "[+] $*"; } warn(){ echo "[!] $*"; }
+say(){ echo "[*] $*"; }; ok(){ echo "[+] $*"; }; warn(){ echo "[!] $*"; }
 O(){ if command -v open >/dev/null 2>&1; then open "$1"; else echo "  copy manually: $1"; fi; }
 while :; do
   cat << M
